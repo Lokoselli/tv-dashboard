@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>UDP Stream Monitor</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      background: #111;
+      color: #eee;
+    }
+
+    #grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 12px;
+    }
+
+    .card {
+      background: #1c1c1c;
+      border-radius: 8px;
+      padding: 12px;
+    }
+
+    .ok { color: #00ff88; }
+    .bad { color: #ff4444; }
+
+    video {
+      width: 100%;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+
+<body>
+  <h2>UDP Stream Monitor</h2>
+  <div id="grid"></div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

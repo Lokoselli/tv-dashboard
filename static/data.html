@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Last Frame Age Dashboard</title>
+  <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+<style>
+table {
+  font-family: Arial, Helvetica, sans-serif;
+  border-collapse: collapse;
+  width: 100%;
+}
+
+td, th {
+  border: 1px solid #ddd;
+  padding: 8px;
+}
+
+tr:nth-child(even){background-color: #f2f2f2;}
+
+tr:hover {background-color: #ddd;}
+
+th {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  text-align: left;
+  background-color: #04AA6D;
+  color: white;
+}
+</style>
+</head>
+<body>
+
+<h3>Last Frame Age</h3>
+
+<select id="selector" multiple size="10"></select>
+<input id="refresh" value="2000"></input>
+<button id="start">START REFRESH</button>
+<button id="stop">STOP REFRESH</button>
+<input id="points" value="5"></input>
+<button id="refreshPoints">REFRESH POINTS</button>
+<table id="top10">
+
+</table>
+<div id="graph"></div>
+
+
+<script>
+const CSV_URL = "stats.csv";
+let REFRESH_MS = document.getElementById("refresh").value;
+let timerId;
+
+async function loadCSV() {
+  function calculatePoints(minutes,streamQty,granTime){
+
+    return minutes * 60 * streamQty / granTime
+  }
+  const res = await fetch(CSV_URL + "?t=" + Date.now());
+  const text = await res.text();
+    let streams
+
+  
+  
+
+  await fetch('api/streams')
+    .then(response => response.json())
+    .then(data => streams= data)
+
+
+
+  userMinutes = document.getElementById("points").value;
+  let MAX_POINTS = calculatePoints(userMinutes,streams.length,10)
+  const lines = text.trim().split("\n");
+  if (lines.length < 2) return {};
+
+  const data = {};
+  const rows = lines.slice(1); // skip header
+
+  // keep only last MAX_POINTS rows
+  const recent = rows.slice(-MAX_POINTS);
+    console.log(recent)
+  for (const row of recent) {
+    const parts = row.split(",");
+    if (parts.length !== 3) continue;
+
+    const ts = Number(parts[0]);
+    const id = parts[1];
+    const age = Number(parts[2]);
+
+    if (!data[id]) {
+      data[id] = { x: [], y: [] };
+    }
+
+    data[id].x.push(new Date(ts * 1000));
+    data[id].y.push(age);
+  }
+
+for( i in streams){
+    let selected = streams[i]
+    console.log(selected)
+    let selectedId = selected["id"]
+    let selectedValues = data[selectedId]
+    console.log(data)
+    let selectedFreezes = selectedValues["y"].reduce((a, b) => a + b, 0);
+    streams[i]["timeFrozen"] = selectedFreezes
+  }
+
+  sortedStreams = streams.sort((a, b) => b.timeFrozen - a.timeFrozen);
+
+  var table = document.getElementById("top10")
+  table.replaceChildren()
+
+  function createTableRow(typeOfRow,nameValue,urlValue,timeFrozenValue,table){
+    var row = document.createElement("tr")
+    var nameColumn = document.createElement(typeOfRow)
+    nameColumn.innerHTML = nameValue
+
+    var udpColumn = document.createElement(typeOfRow)
+    udpColumn.innerHTML = urlValue
+    
+    var timeFrozen = document.createElement(typeOfRow)
+    timeFrozen.innerHTML = timeFrozenValue
+
+    row.appendChild(nameColumn)
+    row.appendChild(udpColumn)
+    row.appendChild(timeFrozen)
+    
+    table.appendChild(row)
+  }
+
+  createTableRow("th","CHANNEL NAME","CHANNEL ADDRESS","TIME FROZEN IN PERIOD",table)
+
+  for(i in sortedStreams){
+ 
+
+    let selected = sortedStreams[i]
+    let channelName = selected["name"]
+    let udpURL = selected["udp_url"]
+    let timeFrozen = selected["timeFrozen"]
+
+    createTableRow("td",channelName,udpURL,timeFrozen,table)
+
+    if(i > 9){
+      break
+    }
+    
+    
+  }
+
+  
+
+  return data;
+}
+
+
+
+function updateSelector(ids) {
+  const sel = document.getElementById("selector");
+
+  // Populate once
+  if (sel.options.length === 0) {
+    ids.forEach(id => {
+      const opt = document.createElement("option");
+      opt.value = id;
+      opt.text = id;
+      opt.selected = true;
+      sel.appendChild(opt);
+    });
+  }
+}
+
+function getSelectedIds() {
+  const sel = document.getElementById("selector");
+  return Array.from(sel.selectedOptions).map(o => o.value);
+}
+
+async function refresh() {
+  const data = await loadCSV();
+  const ids = Object.keys(data);
+
+  if (ids.length === 0) return;
+
+  updateSelector(ids);
+  const selected = getSelectedIds();
+
+  const traces = [];
+
+  for (const id of selected) {
+    if (!data[id]) continue;
+
+    traces.push({
+      x: data[id].x,
+      y: data[id].y,
+      mode: "lines+markers",
+      name: id
+    });
+  }
+
+  Plotly.react("graph", traces, {
+    title: "Seconds Since Last Frame",
+    xaxis: { title: "Time" },
+    yaxis: { title: "Last Frame Age (s)" }
+  });
+}
+
+function startNewInterval(intervalDuration) {
+    // 1. Stop any existing timer (whether it was a timeout or an interval)
+    if (timerId) {
+        clearInterval(timerId); // Use clearInterval for intervals
+        clearTimeout(timerId); // Use clearTimeout for timeouts (just in case)
+        console.log("Previous timer stopped.");
+    }
+
+    // 2. Start a new setInterval and store its new ID
+    timerId = setInterval(refresh, intervalDuration);
+    console.log(`New interval started with ID: ${timerId}, duration: ${intervalDuration}ms`);
+}
+
+function stopIterval() {
+    // 1. Stop any existing timer (whether it was a timeout or an interval)
+    if (timerId) {
+        clearInterval(timerId); // Use clearInterval for intervals
+        clearTimeout(timerId); // Use clearTimeout for timeouts (just in case)
+        console.log("Previous timer stopped.");
+    }
+}
+
+
+document.getElementById("start").addEventListener("click",function(){
+  let refreshTime = document.getElementById("refresh").value
+  startNewInterval(refreshTime)
+})
+
+document.getElementById("stop").addEventListener("click",function(){
+  stopIterval()
+})
+
+document.getElementById("refreshPoints").addEventListener("click",function(){
+  refresh()
+})
+
+
+refresh();
+</script>
+
+</body>
+</html>
