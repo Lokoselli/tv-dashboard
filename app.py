@@ -23,7 +23,7 @@ threading.Thread(
 ).start()
 
 # Load CSV
-with open("streams.csv") as f:
+with open("streams.csv", encoding="utf-8") as f:
     reader = csv.DictReader(f)
     streams = list(reader)
 
