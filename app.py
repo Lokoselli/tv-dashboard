@@ -1,4 +1,4 @@
-from flask import Flask, jsonify, request, send_from_directory,send_file
+from flask import Flask, jsonify, request, send_from_directory,send_file , Response
 import csv
 import threading
 from stream_monitor import monitor_stream, stream_stats
@@ -7,6 +7,8 @@ import threading
 from historical_sampler import sampler_loop
 import pandas as pd
 import os
+import time
+import io
 
 
 app = Flask(__name__)
@@ -39,7 +41,43 @@ CSV_PATH = os.path.join(BASE_DIR, "logs", "stats.csv")
 
 @app.route("/stats.csv")
 def stats():
-    return send_file(CSV_PATH, mimetype="text/csv")
+    # Read ?time=SECONDS
+    try:
+        window = int(request.args.get("time", "0"))*60  # convert minutes to seconds
+        if window <= 0:
+            raise ValueError
+    except ValueError:
+        return "Invalid or missing ?time parameter (seconds)", 400
+
+    now = int(time.time()) 
+    cutoff = now - window
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    with open(CSV_PATH, newline="") as f:
+        reader = csv.reader(f)
+
+        header = next(reader)
+        writer.writerow(header)  # always write header
+
+        for row in reader:
+            try:
+                timestamp = int(row[0])
+            except (ValueError, IndexError):
+                continue
+
+            if timestamp >= cutoff:
+                writer.writerow(row)
+
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={
+            "Cache-Control": "no-cache",
+            "Content-Disposition": "inline; filename=stats.csv"
+        }
+    )
 
 
 

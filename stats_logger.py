@@ -29,12 +29,12 @@ def cleaner():
             
             try:
                 if int(row["timestamp"]) >= cutoff_timestamp:
+
                     rows_to_keep.append(row)
                     
             except (KeyError, ValueError):
                 # skip malformed rows
                 pass
-    print(rows_to_keep)
 
     # Rewrite file with filtered data
     with open(FILE_PATH, "w", newline="") as f:
@@ -45,7 +45,7 @@ def cleaner():
 
 def log_stats(stream_id, stats):
     try:
-        #cleaner()
+        cleaner()
         a =1 
     except Exception as e:
         print(e)

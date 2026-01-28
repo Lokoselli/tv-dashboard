@@ -1,0 +1,7 @@
+id,name,udp_url
+canal_hotel,CANAL HOTEL,udp://@224.2.2.210:1001
+bonvoy_tv,BONVOY TV,udp://@224.2.2.211:1001
+cnn_internacional,CNN INTERNACIONAL,udp://@224.2.2.44:1001
+cnn_espanhol,CNN ESPANHOL,udp://@224.2.2.43:1001
+GLOBO,GLOBO,udp://@224.2.2.27:1001
+

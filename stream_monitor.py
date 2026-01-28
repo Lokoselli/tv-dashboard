@@ -4,7 +4,7 @@ import time
 from ffmpeg_logger import log_ffmpeg
 
 
-RESTART_DELAY = 10  # seconds
+RESTART_DELAY = 15  # seconds
 
 stream_stats = {}
 processes = {}

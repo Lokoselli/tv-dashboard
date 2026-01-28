@@ -38,7 +38,7 @@ th {
 <button id="start">START REFRESH</button>
 <button id="stop">STOP REFRESH</button>
 <input id="points" value="5"></input>
-<button id="refreshPoints">REFRESH POINTS</button>
+<button id="refreshPoints">REFRESH POINTS IN MINUTES</button>
 <table id="top10">
 
 </table>
@@ -55,7 +55,7 @@ async function loadCSV() {
 
     return minutes * 60 * streamQty / granTime
   }
-  const res = await fetch(CSV_URL + "?t=" + Date.now());
+  const res = await fetch(CSV_URL + "?time=" + document.getElementById("points").value);
   const text = await res.text();
     let streams
 
