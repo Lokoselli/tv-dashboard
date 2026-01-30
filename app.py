@@ -43,7 +43,7 @@ CSV_PATH = os.path.join(BASE_DIR, "logs", "stats.csv")
 def stats():
     # Read ?time=SECONDS
     try:
-        window = int(request.args.get("time", "0"))*60  # convert minutes to seconds
+        window = int(request.args.get("time", "0"))*60*1000  # convert minutes to seconds
         if window <= 0:
             raise ValueError
     except ValueError:
